@@ -155,6 +155,17 @@ namespace gpu
 			// 生成したプログラムのIDを代入
 			FID = CSPID;
 
+			// SSBOの生成
+			glGenBuffers(1, &SSBO); // 空のSSBOオブジェクト生成(第一引数は生成するオブジェクトの個数)
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO); // 生成したSSBOオブジェクトのバインド
+			//glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, buffer, GL_STATIC_DRAW);
+			/*
+			SSBOに関する参考URL
+			http://techblog.sega.jp/entry/2016/10/27/140454
+			http://hmgmmsa.hatenablog.com/entry/2017/05/05/041200
+			このへん
+			*/
+
 			// 処理の終了
 			return 1;
 		}
@@ -164,6 +175,7 @@ namespace gpu
 		{
 			// 変数の値の初期化
 			FID = GL_FALSE;
+			SSBO = GL_FALSE;
 			error = 0;
 			error_desc = "";
 			loadShader(Filename);
