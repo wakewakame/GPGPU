@@ -57,7 +57,8 @@ namespace gpu
 	{
 	private:
 		GLuint FID; // GPU側の関数ID
-		GLuint SSBO; // SSBOオブジェクトのID
+		GLuint SSBO_IN; // 入力SSBOオブジェクトのID
+		GLuint SSBO_OUT; // 出力SSBOオブジェクトのID
 		bool error; // エラーが発生すれば1が代入される
 		std::string error_desc; // エラー文代入用変数
 
@@ -92,8 +93,26 @@ namespace gpu
 		*/
 		void Translation(std::string *SorceCode)
 		{
+			/*
+			// シングルクォーテーション、ダブルクォーテーション内は無視
+
+			// コメントアウトの除去
+
 			// シェーダのバージョン指定
-			//*SorceCode = "#version 430\n" + *SorceCode;
+			*SorceCode = "#version 430\n" + *SorceCode;
+			*/
+
+			/*
+			コメントアウト除去->コメント内の\n以外の改行コード除去->for文で文字列文ループ->"",(),{}などの囲いを見つけるごとにTree形成
+			インデントやスペースはそのままにしておく
+			Treeのノードには、ほかの"",(),{}などのノード、それ以外を,や;で区切ったテキストノード、自ノードの"",(),{},,,;などの属性の情報を保持させる
+			""内は処理しない \" に注意
+			()内は,と;で区切る
+			{}内は通常通りに処理
+
+			INPUT_DATAやOUTPUT_DATA,SLEDのノードを探し、ツリーを置換
+			ツリーを文字列に再形成
+			*/
 
 			return;
 		}
@@ -105,6 +124,43 @@ namespace gpu
 		*/
 		bool loadShader(std::string Filename)
 		{
+			// 変数の値の初期化
+			FID = GL_FALSE;
+			SSBO_IN = GL_FALSE;
+			SSBO_OUT = GL_FALSE;
+
+			// SSBOの生成
+			if (typeid(INPUT) != typeid(void)) // GPUに送るデータがあるか確認
+			{
+				glGenBuffers(1, &SSBO_IN); // 空の入力SSBOオブジェクト生成(第一引数は生成するオブジェクトの個数)
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_IN); // 生成した入力SSBOオブジェクトのバインド
+				glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(INPUT), NULL, GL_STATIC_DRAW); // 入力SSBOオブジェクトのバッファ確保
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_IN, SSBO_IN); // Bind Pointは重複を避けるためにSSBOのIDを使用
+				std::cout << "SSBO_IN bind point:" << SSBO_IN << std::endl;
+			}
+			if (typeid(OUTPUT) != typeid(void)) // GPUから受け取るデータがあるか確認
+			{
+				glGenBuffers(1, &SSBO_OUT); // 空の出力SSBOオブジェクト生成(第一引数は生成するオブジェクトの個数)
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_OUT); // 生成した入力SSBOオブジェクトのバインド
+				glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(OUTPUT), NULL, GL_STATIC_DRAW); // 入力SSBOオブジェクトのバッファ確保
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_OUT, SSBO_OUT); // Bind Pointは重複を避けるためにSSBOのIDを使用
+				std::cout << "SSBO_OUT bind point:" << SSBO_OUT << std::endl;
+			}
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+			/*
+			SSBOに関する参考URL
+			http://techblog.sega.jp/entry/2016/10/27/140454
+			http://hmgmmsa.hatenablog.com/entry/2017/05/05/041200
+			このへん
+
+			SSBOのバッファ確保は
+			glBufferData
+			SSBOにデータ代入は
+			glBufferSubData
+			glBindBufferBase
+			このへん？
+			*/
+
 			// ソースコードのコンパイル
 			GLuint CSID = glCreateShader(GL_COMPUTE_SHADER); // 空のコンピュートシェーダー生成
 			std::string CSCode; // ソースコードの文字列代入用変数
@@ -155,17 +211,6 @@ namespace gpu
 			// 生成したプログラムのIDを代入
 			FID = CSPID;
 
-			// SSBOの生成
-			glGenBuffers(1, &SSBO); // 空のSSBOオブジェクト生成(第一引数は生成するオブジェクトの個数)
-			glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO); // 生成したSSBOオブジェクトのバインド
-			//glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, buffer, GL_STATIC_DRAW);
-			/*
-			SSBOに関する参考URL
-			http://techblog.sega.jp/entry/2016/10/27/140454
-			http://hmgmmsa.hatenablog.com/entry/2017/05/05/041200
-			このへん
-			*/
-
 			// 処理の終了
 			return 1;
 		}
@@ -174,8 +219,6 @@ namespace gpu
 		func(std::string Filename)
 		{
 			// 変数の値の初期化
-			FID = GL_FALSE;
-			SSBO = GL_FALSE;
 			error = 0;
 			error_desc = "";
 			loadShader(Filename);

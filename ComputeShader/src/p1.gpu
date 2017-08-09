@@ -1,67 +1,25 @@
 /*
-注意点
-	初めに変数宣言をしてから関数を追加していく
+layout(std430,binding=0) readonly buffer SSBO {
+	vec4 data[];
+} gSSBO1;
 
-	変数宣言は必ず
-		入力される変数
-		出力する変数
-		GPUのみで使用する変数
-	の順で書く
-
-	入力される変数、出力する変数は、
-	C++側の構造体と同じ並びにする
-
-	スレッドの数はmain関数の上に[100]といった感じで書く
-	自分のスレッド番号はsled変数に代入される
-	sledは0から始まり、1ずつ増える
-
-	GPUのみで使用する変数は、別のgpuファイルの関数とも、値を共有できる
-
-	入出力変数に使用可能な型、修飾子は
-		型
-			int
-			float
-		修飾子
-			unsigned
-
-	GPUのみで使用する変数に使用可能な型、修飾子は
-		型
-			bool
-			int
-			float
-			vec2
-			vec3
-			vec4
-			bvec2
-			bvec3
-			bvec4
-			ivec2
-			ivec3
-			ivec4
-			mat2
-			mat3
-			mat4
+layout(std430,binding=0) writeonly buffer SSBO {
+	vec4 data[];
+} gSSBO2;
 */
 
-// 入力される変数
-int a;
-float b;
-int c[100];
+INPUT_DATA {
+	int a[100]
+}
 
-// 出力する変数
-float d;
-int e;
-float f[200];
+OUTPUT_DATA {
+	float b[100]
+}
 
-// GPUのみで使用する変数
-int g;
+SLED=100;
 
-[100]
-void main() {
-	ivec2 storePos = ivec2(gl_GlobalInvocationID.xy);
-	imageStore(
-		destTex, 
-		storePos, 
-		vec4( 0.5, 0.5,0.5,0)
-	);
+void main()
+{
+	vec4 data0 = INPUT_DATA.data[0];
+	OUTPUT_DATA.data[0] = vec4(0.0);
 }
