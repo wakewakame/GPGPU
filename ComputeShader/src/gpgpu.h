@@ -135,22 +135,21 @@ namespace gpu
 				glGenBuffers(1, &SSBO_IN); // 空の入力SSBOオブジェクト生成(第一引数は生成するオブジェクトの個数)
 				glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_IN); // 生成した入力SSBOオブジェクトのバインド
 				glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(INPUT), NULL, GL_STATIC_DRAW); // 入力SSBOオブジェクトのバッファ確保
-				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_IN, SSBO_IN); // Bind Pointは重複を避けるためにSSBOのIDを使用
-				std::cout << "SSBO_IN bind point:" << SSBO_IN << std::endl;
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_IN, SSBO_IN); // GPUのRAMと紐ずけ紐づけ(Bind Pointは重複を避けるためにSSBOのIDを使用)
 			}
 			if (typeid(OUTPUT) != typeid(void)) // GPUから受け取るデータがあるか確認
 			{
 				glGenBuffers(1, &SSBO_OUT); // 空の出力SSBOオブジェクト生成(第一引数は生成するオブジェクトの個数)
 				glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_OUT); // 生成した入力SSBOオブジェクトのバインド
 				glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(OUTPUT), NULL, GL_STATIC_DRAW); // 入力SSBOオブジェクトのバッファ確保
-				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_OUT, SSBO_OUT); // Bind Pointは重複を避けるためにSSBOのIDを使用
-				std::cout << "SSBO_OUT bind point:" << SSBO_OUT << std::endl;
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_OUT, SSBO_OUT); // GPUのRAMと紐ずけ紐づけ(Bind Pointは重複を避けるためにSSBOのIDを使用)
 			}
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 			/*
 			SSBOに関する参考URL
 			http://techblog.sega.jp/entry/2016/10/27/140454
 			http://hmgmmsa.hatenablog.com/entry/2017/05/05/041200
+			http://www.geeks3d.com/20140704/tutorial-introduction-to-opengl-4-3-shader-storage-buffers-objects-ssbo-demo/
 			このへん
 
 			SSBOのバッファ確保は
@@ -238,17 +237,41 @@ namespace gpu
 		*/
 		bool Compute(INPUT *input, OUTPUT *output)
 		{
-			glUseProgram(FID); // シェーダーの指定
+			// シェーダーの指定
+			glUseProgram(FID);
+
+			// 値の代入
 			if ((typeid(INPUT) != typeid(void)) && (input != nullptr)) // GPUに送るデータがあるか確認
 			{
-
+				// SSBO_INバインド
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_IN);
+				// バインディングポイントの指定
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, SSBO_IN); // Binding Pointは重複を避けるためにSSBOのIDを使用
+				// 構造体データ代入用のメモリ確保
+				GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
+				// 代入
+				std::memcpy(p, input, sizeof(INPUT));
+				// 代入した値をGPUに転送&生成したメモリの開放
+				glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 			}
+
+			// 計算
+			glDispatchCompute(512 / 100, 1, 1); // 使用するスレッド数
+
+			// 計算結果の取得
 			if ((typeid(OUTPUT) != typeid(void)) && (output != nullptr)) // GPUから受け取るデータがあるか確認
 			{
-
+				// SSBO_OUTバインド
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_OUT);
+				// バインディングポイントの指定
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, SSBO_OUT); // Binding Pointは重複を避けるためにSSBOのIDを使用
+				// 構造体データ代入用のメモリ確保&値の取得
+				GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+				// 代入
+				std::memcpy(output, p, sizeof(OUTPUT));
+				// 生成したメモリの開放
+				glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 			}
-			//glUniform1f(glGetUniformLocation(computeHandle, "input"), (float)frame*0.01f);
-			//glDispatchCompute(512 / 16, 512 / 16, 1);
 			return 1;
 		}
 

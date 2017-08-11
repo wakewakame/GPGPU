@@ -1,15 +1,29 @@
-layout(std430,binding=1) readonly buffer SSBO {
-	vec4 data[];
-} INPUT_DATA;
+#version 430
 
-layout(std430,binding=2) writeonly buffer SSBO {
-	vec4 data[];
-} OUTPUT_DATA;
+/*
+自分用リファレンス
 
-layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+SSBO構造体宣言
+XXX: 読み込み専用->readonly 書き込み専用->writeonly
+layout(std430, binding=任意のバインディングポイント) XXX 構造体名 {
+	構造体の中身
+} 変数名
+*/
+
+layout(std430,binding=1) readonly buffer INPUT_DATA {
+	int a[100];
+} input_data;
+
+layout(std430,binding=2) writeonly buffer OUTPUT_DATA {
+	float b[100];
+} output_data;
+
+uint index;
+
+layout(local_size_x = 100) in;
 
 void main()
 {
-	vec4 data0 = INPUT_DATA.data[0];
-	OUTPUT_DATA.data[0] = vec4(0.0);
+	index = gl_GlobalInvocationID.x;
+	output_data.b[index] = float(input_data.a[index]) + 1.0;
 }

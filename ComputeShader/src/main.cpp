@@ -75,10 +75,29 @@ void main()
 	std::cout << "完了" << std::endl;
 	std::cout << "プログラムID:" << func1.getPID() << std::endl;
 
-	// 計算
+	// 入出力構造体インスタンス化&初期化
 	INPUT_DATA input;
 	OUTPUT_DATA output;
+	for (int i = 0; i < 100; i++) {
+		input.a[i] = i;
+		output.b[i] = 0.0f;
+	}
+
+	// 計算
 	error = func1.Compute(&input, &output);
+
+	// エラー確認
+	if (error == 0)
+	{
+		std::cout << "エラー\n" << func1.getError() << std::endl;
+		std::getchar();
+		return;
+	}
+
+	// 計算結果の表示
+	for (int i = 0; i < 100; i++) {
+		std::cout << input.a[i] << ":" << (int)output.b[i] << std::endl;
+	}
 
 	// 入力があるまで待機
 	std::getchar();
