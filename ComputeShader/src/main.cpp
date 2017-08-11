@@ -2,68 +2,30 @@
 #include <iostream>
 #include <windows.h>
 
+const unsigned int num_loop = 100; // 処理の数
+const unsigned int num_sled = 100; // 処理を何個のスレッドが受け持つか(1<=num_sled<=num_loop)
+
 struct INPUT_DATA
 {
-	int a[100];
+	int a[num_loop];
 };
 
 struct OUTPUT_DATA
 {
-	float b[100];
+	float b[num_loop];
 };
 
 void main()
 {
-	/*
-	主な流れ
-	1.インスタンス生成
-	2.初期化
-	3.プログラムの生成
-	4.計算
-	*/
+	gpu::initGL();
 
-	// エラー確認用変数の宣言
-	bool error;
+	std::string DIR = "G:\\思い出\\Dropbox\\Dropbox\\C++\\ComputeShader\\ComputeShader\\src\\";
+	std::string FILE1 = "p1.glsl";
+	std::string FILE2 = "p2.glsl";
 
-	// GLの初期化
-	std::cout << "OpenGLを初期化しています" << std::endl;
-	error = gpu::initGL();
-	
-	// エラー確認
-	if (!error)
-	{
-		std::cout << "OpenGLの初期化に失敗しました" << std::endl;
-		std::getchar();
-		return;
-	}
+	gpu::func<INPUT_DATA, gpu::Empty> func1(DIR+FILE1, num_loop, num_sled);
+	gpu::func<gpu::Empty, OUTPUT_DATA> func2(DIR+FILE2, num_loop, num_sled);
 
-	// GPU側に追加する関数のソースコードのファイルパス指定
-	std::cout << "GPU側に追加する関数のソースコードのファイルパスを指定します" << std::endl;
-		// ファイル選択ダイアログの表示
-		OPENFILENAME ofn;
-		char szFile[MAX_PATH] = "";
-		ZeroMemory(&ofn, sizeof(ofn));
-		ofn.lStructSize = sizeof(OPENFILENAME);
-		ofn.lpstrFilter = TEXT("全てのファイル(*.*)\0*.*\0");
-		ofn.lpstrFile = szFile;
-		ofn.nMaxFile = MAX_PATH;
-		ofn.Flags = OFN_FILEMUSTEXIST;
-		if (GetOpenFileName(&ofn) == 0)
-		{
-			std::cout << "ファイルが選択されませんでした" << std::endl;
-			std::getchar();
-			return;
-		}
-
-		// 選択されたファイルのパス取得
-		std::string Filename = ofn.lpstrFile;
-		std::cout << Filename << std::endl;
-
-	// GPU側に関数を追加
-	std::cout << "関数を追加しています" << std::endl;
-	gpu::func<INPUT_DATA,OUTPUT_DATA> func1(Filename);
-
-	// エラー確認
 	if (func1.checkError() == 1)
 	{
 		std::cout << "エラー\n" << func1.getError() << std::endl;
@@ -71,33 +33,51 @@ void main()
 		return;
 	}
 
-	// 生成したプログラムのID表示
-	std::cout << "完了" << std::endl;
-	std::cout << "プログラムID:" << func1.getPID() << std::endl;
+	if (func2.checkError() == 1)
+	{
+		std::cout << "エラー\n" << func2.getError() << std::endl;
+		std::getchar();
+		return;
+	}
+
+	LARGE_INTEGER freq;
+	if (!QueryPerformanceFrequency(&freq)) return;
+	LARGE_INTEGER start, end;
+
+	///
+	GLuint aaa;
+	glGenBuffers(1, &aaa); // 空の入力SSBOオブジェクト生成(第一引数は生成するオブジェクトの個数)
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, aaa); // 生成した入力SSBOオブジェクトのバインド
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(OUTPUT_DATA), NULL, GL_STATIC_DRAW); // 入力SSBOオブジェクトのバッファ確保
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, aaa); // GPUのRAMと紐ずけ紐づけ(Bind Pointは重複を避けるためにSSBOのIDを使用)
+	///
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+
+	std::cout << std::endl << "--GPU--" << std::endl;
 
 	// 入出力構造体インスタンス化&初期化
 	INPUT_DATA input;
 	OUTPUT_DATA output;
-	for (int i = 0; i < 100; i++) {
+	for (int i = 0; i < num_loop; i++) {
 		input.a[i] = i;
 		output.b[i] = 0.0f;
 	}
 
 	// 計算
-	error = func1.Compute(&input, &output);
+	std::cout << "計算中" << std::endl;
+	QueryPerformanceCounter(&start);
+	func1.Compute(&input, nullptr);
+	func2.Compute(nullptr, &output);
+	QueryPerformanceCounter(&end);
 
-	// エラー確認
-	if (error == 0)
-	{
-		std::cout << "エラー\n" << func1.getError() << std::endl;
-		std::getchar();
-		return;
+	// 結果出力
+	for (int i = 0; i < num_loop; i++) {
+		std::cout << output.b[i] << std::endl;
 	}
 
-	// 計算結果の表示
-	for (int i = 0; i < 100; i++) {
-		std::cout << input.a[i] << ":" << (int)output.b[i] << std::endl;
-	}
+	// 所要時間
+	std::cout << "所要時間" << std::fixed << (double)(end.QuadPart - start.QuadPart) / freq.QuadPart << "sec.\n";
 
 	// 入力があるまで待機
 	std::getchar();

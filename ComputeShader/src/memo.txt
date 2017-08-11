@@ -1,0 +1,68 @@
+実装メモ
+
+発見1
+C++側でSSBOさえ生成すれば、
+シェーダー間でbinding pointの値が同じであれば、
+値を共有できることが分かった。
+
+実装1
+名前空間gpuの中、クラスfuncの外で、
+varクラスの生成
+注意点として、テンプレート引数はclass,structのみ対応
+(継承するため)
+つまりint型1つだけでも、class,structで囲む必要がある。
+	template <class TYPE>
+	class var : public TYPE{
+	private:
+		// SSBOのIDを保持する変数
+		GLuint SSBO_ID;
+	public:
+		// SSBO生成関数
+		void createSSBO(){
+			glGenBuffers(1, &SSBO_ID); // 空の入力SSBOオブジェクト生成(第一引数は生成するオブジェクトの個数)
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_ID); // 生成した入力SSBOオブジェクトのバインド
+			glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(TYPE), NULL, GL_STATIC_DRAW); // 入力SSBOオブジェクトのバッファ確保
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_ID, SSBO_ID); // GPUのRAMと紐ずけ紐づけ(Bind Pointは重複を避けるためにSSBOのIDを使用)
+		}
+		// コンストラクタ
+		var(){
+			createSSBO();
+		}
+		// 値の代入
+		void set(){
+			// SSBO_IDバインド
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_ID);
+			// バインディングポイントの指定
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, SSBO_ID); // Binding Pointは重複を避けるためにSSBOのIDを使用
+			// 構造体データ代入用のメモリ確保
+			GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
+			// 代入
+			std::memcpy(p, (TYPE*)this, sizeof(TYPE));
+			// 代入した値をGPUに転送&生成したメモリの開放
+			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER)
+		}
+		// 値の取得
+		void get(){
+			// SSBO_IDバインド
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_ID);
+			// バインディングポイントの指定
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, SSBO_ID); // Binding Pointは重複を避けるためにSSBOのIDを使用
+			// 構造体データ代入用のメモリ確保&値の取得
+			GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+			// 代入
+			std::memcpy((TYPE*)this, p, sizeof(TYPE));
+			// 生成したメモリの開放
+			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+		}
+		// SSBO_IDの取得
+		GLuint getID(){
+			return SSBO_ID;
+		}
+	};
+
+実装2
+関数の引数と戻り値はgpu::var型に統一する。
+
+実装3
+シェーダー間で同じbinding pointを持たせられるように実装
+もしくは違うbinding pointの変数内容をGPUのみで同期できるように実装

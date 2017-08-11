@@ -5,6 +5,7 @@
 #include <string>
 #include <fstream>
 #include <iterator>
+#include <cmath>
 
 // GPGPUに必要な関数やクラスをまとめたもの
 namespace gpu
@@ -44,13 +45,16 @@ namespace gpu
 		glfwTerminate(); // GLFWの終了
 	}
 
+	// 空の構造体宣言
+	struct Empty{};
+
 	/*
 	GPU側に関数を追加するクラス
 	インスタンスを生成するごとに、GPUに関数が追加される
 	Compute関数でGPU側の関数を実行する
 	エラーはgetErrorで取得できる
-		テンプレート引数1:GPU側に値を渡すための入力構造体(無ければvoid型を指定)
-		テンプレート引数2:GPU側から値を受け取るための出力構造体(無ければvoid型を指定)
+		テンプレート引数1:GPU側に値を渡すための入力構造体(無ければEmpty型を指定)
+		テンプレート引数2:GPU側から値を受け取るための出力構造体(無ければEmpty型を指定)
 	*/
 	template <typename INPUT, typename OUTPUT>
 	class func
@@ -59,6 +63,8 @@ namespace gpu
 		GLuint FID; // GPU側の関数ID
 		GLuint SSBO_IN; // 入力SSBOオブジェクトのID
 		GLuint SSBO_OUT; // 出力SSBOオブジェクトのID
+		unsigned int loop; // ループ回数
+		unsigned int sled; // 生成するスレッド数
 		bool error; // エラーが発生すれば1が代入される
 		std::string error_desc; // エラー文代入用変数
 
@@ -130,14 +136,14 @@ namespace gpu
 			SSBO_OUT = GL_FALSE;
 
 			// SSBOの生成
-			if (typeid(INPUT) != typeid(void)) // GPUに送るデータがあるか確認
+			if (typeid(INPUT) != typeid(Empty)) // GPUに送るデータがあるか確認
 			{
 				glGenBuffers(1, &SSBO_IN); // 空の入力SSBOオブジェクト生成(第一引数は生成するオブジェクトの個数)
 				glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_IN); // 生成した入力SSBOオブジェクトのバインド
 				glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(INPUT), NULL, GL_STATIC_DRAW); // 入力SSBOオブジェクトのバッファ確保
 				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_IN, SSBO_IN); // GPUのRAMと紐ずけ紐づけ(Bind Pointは重複を避けるためにSSBOのIDを使用)
 			}
-			if (typeid(OUTPUT) != typeid(void)) // GPUから受け取るデータがあるか確認
+			if (typeid(OUTPUT) != typeid(Empty)) // GPUから受け取るデータがあるか確認
 			{
 				glGenBuffers(1, &SSBO_OUT); // 空の出力SSBOオブジェクト生成(第一引数は生成するオブジェクトの個数)
 				glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_OUT); // 生成した入力SSBOオブジェクトのバインド
@@ -215,11 +221,13 @@ namespace gpu
 		}
 
 	public:
-		func(std::string Filename)
+		func(std::string Filename, unsigned int set_loop, unsigned int set_sled)
 		{
 			// 変数の値の初期化
 			error = 0;
 			error_desc = "";
+			loop = set_loop;
+			sled = set_sled;
 			loadShader(Filename);
 		}
 
@@ -241,7 +249,7 @@ namespace gpu
 			glUseProgram(FID);
 
 			// 値の代入
-			if ((typeid(INPUT) != typeid(void)) && (input != nullptr)) // GPUに送るデータがあるか確認
+			if ((typeid(INPUT) != typeid(Empty)) && (input != nullptr)) // GPUに送るデータがあるか確認
 			{
 				// SSBO_INバインド
 				glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_IN);
@@ -256,10 +264,10 @@ namespace gpu
 			}
 
 			// 計算
-			glDispatchCompute(512 / 100, 1, 1); // 使用するスレッド数
+			glDispatchCompute(std::ceil(sled), 1, 1); // 使用するスレッド数(x, y, z)
 
 			// 計算結果の取得
-			if ((typeid(OUTPUT) != typeid(void)) && (output != nullptr)) // GPUから受け取るデータがあるか確認
+			if ((typeid(OUTPUT) != typeid(Empty)) && (output != nullptr)) // GPUから受け取るデータがあるか確認
 			{
 				// SSBO_OUTバインド
 				glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO_OUT);
