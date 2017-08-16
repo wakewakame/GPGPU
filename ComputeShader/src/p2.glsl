@@ -11,11 +11,11 @@ layout(std430, binding=任意のバインディングポイント) XXX 構造体名 {
 */
 
 layout(std430,binding=2) buffer OUTPUT_DATA {
-	float b[100];
+	float b[1024];
 } output_data;
 
 layout(std430,binding=3) buffer OUTPUT_DATA2 {
-	float b[100];
+	float b[1024];
 } output_data2;
 
 uint index;

@@ -1,4 +1,4 @@
-#include "gpgpu.h"
+#include "gpgpu2.h"
 #include "CPU.h"
 #include <iostream>
 #include <windows.h>

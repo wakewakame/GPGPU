@@ -23,12 +23,15 @@
     </Resource>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\gpgpu.h">
+    <ClInclude Include="src\CPU.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gpgpu2.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\main.cpp">
+    <ClCompile Include="src\main3.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>

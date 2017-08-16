@@ -121,10 +121,11 @@
     </Resource>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\gpgpu.h" />
+    <ClInclude Include="src\CPU.h" />
+    <ClInclude Include="src\gpgpu2.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\main3.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
