@@ -1,0 +1,27 @@
+notesel buf
+noteload "result.txt"
+
+sx=640.0
+sy=480.0
+screen 0,sx,sy
+
+len = notemax/2
+ddim cpu,len
+ddim gpu,len
+zoom = 20000.0
+
+repeat len
+	noteget s_cpu,cnt*2
+	noteget s_gpu,cnt*2+1
+	cpu(cnt) = double(s_cpu)
+	gpu(cnt) = double(s_gpu)
+loop
+
+repeat len-1
+	color 30,30,30
+	line sx*double(cnt)/double(len), sy/2.0, sx*double(cnt+1)/double(len), sy/2.0
+	color 255,0,0
+	line sx*double(cnt)/double(len), sy/2.0-cpu(cnt)*zoom, sx*double(cnt+1)/double(len), sy/2.0-cpu(cnt+1)*zoom
+	color 0,0,255
+	line sx*double(cnt)/double(len), sy/2.0-gpu(cnt)*zoom, sx*double(cnt+1)/double(len), sy/2.0-gpu(cnt+1)*zoom
+loop
