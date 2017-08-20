@@ -21,10 +21,10 @@
     <ClInclude Include="src\gpgpu2.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="src\RUN.h">
+    <ClInclude Include="src\transform.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="src\transform.h">
+    <ClInclude Include="src\RUN2.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
