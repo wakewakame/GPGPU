@@ -17,11 +17,15 @@ void main()
 		text += cpu + "\n" + gpu + "\n";
 	}
 
-	std::ofstream outputfile("result.txt");
+	std::ofstream outputfile("test\\result.txt");
 	outputfile << text;
 	outputfile.close();
 
+	test::gpu::view();
+
 	test::cpu::exit();
 	test::gpu::exit();
+
+	std::getchar();
 	return;
 }

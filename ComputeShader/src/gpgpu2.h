@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iterator>
 #include <cmath>
+#include "transform.h"
 
 // GPGPUに必要な関数やクラスをまとめたもの
 namespace gpgpu
@@ -155,7 +156,7 @@ namespace gpgpu
 	class func
 	{
 	private:
-		std::string Code; // シェーダーのソースコード
+		Code code; // シェーダーのソースコード
 		GLuint FID; // GPU側の関数ID
 		std::vector<GLuint> SSBO_back; // 前回のGPU側の変数ID
 		std::vector<GLuint> SSBO; // GPU側の変数ID
@@ -163,61 +164,6 @@ namespace gpgpu
 		unsigned int sled; // 生成するスレッド数
 		bool error; // エラーが発生すれば1が代入される
 		std::string error_desc; // エラー文代入用変数
-
-		/*
-		テキストファイル読み込み関数
-			引数1:テキストのファイルのパス
-			引数2:読み込んだテキストを代入する変数
-			戻り値:成功すれば1
-		*/
-		bool loadText(std::string Filename, std::string *Text)
-		{
-			*Text = ""; // テキスト初期化
-			std::ifstream ifsText(Filename); // ifstreamでテキスト読み込み
-			if (ifsText.fail()) // 成功確認
-			{
-				error = 1;
-				error_desc = "File Open Failed";
-				return 0;
-			}
-			// 使い方とか仕組みがよくわからないけど、これで読み込めるのでOK。
-			std::istreambuf_iterator<char> it(ifsText);
-			std::istreambuf_iterator<char> last;
-			std::string _Text(it, last);
-			*Text = _Text; // 代入
-			return 1;
-		}
-
-		/*
-		コンピュートシェーダーに変換する関数
-			引数1:変換するテキスト
-			戻り値:変換されたテキスト
-		*/
-		std::string Translation(std::string const &SorceCode)
-		{
-			/*
-			// シングルクォーテーション、ダブルクォーテーション内は無視
-
-			// コメントアウトの除去
-
-			// シェーダのバージョン指定
-			*SorceCode = "#version 430\n" + *SorceCode;
-			*/
-
-			/*
-			コメントアウト除去->コメント内の\n以外の改行コード除去->for文で文字列文ループ->"",(),{}などの囲いを見つけるごとにTree形成
-			インデントやスペースはそのままにしておく
-			Treeのノードには、ほかの"",(),{}などのノード、それ以外を,や;で区切ったテキストノード、自ノードの"",(),{},,,;などの属性の情報を保持させる
-			""内は処理しない \" に注意
-			()内は,と;で区切る
-			{}内は通常通りに処理
-
-			INPUT_DATAやOUTPUT_DATA,SLEDのノードを探し、ツリーを置換
-			ツリーを文字列に再形成
-			*/
-
-			return SorceCode;
-		}
 
 		/*
 		コンピュートシェーダー読み込み関数
@@ -231,7 +177,7 @@ namespace gpgpu
 
 			// ソースコードのコンパイル
 			GLuint CSID = glCreateShader(GL_COMPUTE_SHADER); // 空のコンピュートシェーダー生成
-			std::string CSCode = Translation(Code); // ソースコードをコンピュートシェーダに変換
+			std::string CSCode = code.get_glsl(); // ソースコードをコンピュートシェーダに変換
 			char const *charCSCode = CSCode.c_str(); // char型にキャスト
 			glShaderSource(CSID, 1, &charCSCode, NULL); // OpenGL側にソースコードを送る
 			glCompileShader(CSID); // ソースコードのコンパイル
@@ -292,6 +238,7 @@ namespace gpgpu
 			if(SSBO_back != SSBO)
 			{
 				SSBO = SSBO_back;
+				code.set_param("430", loop, sled, (std::vector<unsigned int>)SSBO);
 				loadShader();
 			}
 			SSBO_back.clear();
@@ -308,12 +255,12 @@ namespace gpgpu
 		func(std::string Filename, unsigned int set_loop, unsigned int set_sled)
 		{
 			// 変数の値の初期化
+			code.open(Filename, 1);
 			error = 0;
 			error_desc = "";
 			loop = set_loop;
 			sled = set_sled;
 			FID = GL_FALSE;
-			loadText(Filename, &Code);
 		}
 
 		~func()

@@ -117,6 +117,7 @@
   <ItemGroup>
     <ClInclude Include="src\RUN.h" />
     <ClInclude Include="src\gpgpu2.h" />
+    <ClInclude Include="src\transform.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main3.cpp" />

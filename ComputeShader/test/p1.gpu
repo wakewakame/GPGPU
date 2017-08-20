@@ -1,4 +1,8 @@
 struct input_data
+
+
+
+
 {
 	int a[loop];
 };

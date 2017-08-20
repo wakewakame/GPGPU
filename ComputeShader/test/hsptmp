@@ -8,7 +8,7 @@ screen 0,sx,sy
 len = notemax/2
 ddim cpu,len
 ddim gpu,len
-zoom = 2000.0
+zoom = 20000.0
 
 repeat len
 	noteget s_cpu,cnt*2

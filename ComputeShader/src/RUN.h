@@ -77,7 +77,7 @@ namespace test {
 	{
 		std::string DIR = "G:\\思い出\\Dropbox\\Dropbox\\C++\\ComputeShader\\ComputeShader\\src\\";
 		//std::string DIR = "C:\\Users\\大輝\\Dropbox\\C++\\ComputeShader\\ComputeShader\\src\\";
-		std::string FILE1 = "p1.glsl";
+		std::string FILE1 = "p1.gpu";
 
 		gpgpu::var<INPUT_DATA> *input;
 		gpgpu::var<OUTPUT_DATA> *output;
@@ -117,6 +117,13 @@ namespace test {
 			output->get();
 			QueryPerformanceCounter(&end);
 			return (double)(end.QuadPart - start.QuadPart) / freq.QuadPart;
+		}
+
+		// 結果表示
+		void view() {
+			for (int i = 0; i < num_loop; i++) {
+				std::cout << output->data.b[i] << std::endl;
+			}
 		}
 
 		// かかった時間表示
