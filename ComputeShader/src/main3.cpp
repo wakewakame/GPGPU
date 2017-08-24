@@ -6,7 +6,11 @@
 void main()
 {
 	Test test;
-	test.compute(2048*1024,2048);
-	std::getchar();
+	unsigned int num_loop = 2048;
+	while (true)
+	{
+		test.compute(num_loop, num_loop);
+		if (std::getchar() == 'e') break;
+	}
 	return;
 }

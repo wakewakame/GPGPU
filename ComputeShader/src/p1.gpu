@@ -1,14 +1,20 @@
 struct input_data
 {
-	int num;
+	float arr[loop];
 };
 
 struct output_data
 {
-	int sum;
+	float arr[loop];
 };
 
 main()
 {
-	output_data.sum = int(100.0*sin(float(input_data.num)));
+	for (int i = 0; i < loop; i++)
+	{
+		output_data.arr[index] += sin(
+			input_data.arr[i]
+		);
+		output_data.arr[index] /= loop;
+	}	
 }

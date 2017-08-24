@@ -8,7 +8,38 @@
 template <typename INPUT_DATA, typename OUTPUT_DATA>
 void cpu_prosess(unsigned int &num_loop, INPUT_DATA &input, OUTPUT_DATA &output) {
 	for (int i = 0; i < num_loop; i++) {
-		output.data.sum = (int)(100.0*sin((float)input.data.num));
+		for (int j = 0; j < num_loop; j++)
+		{
+			output.data.arr[i] += sin(
+				input.data.arr[j]
+			);
+			output.data.arr[i] /= num_loop;
+		}	
+	}
+}
+
+// 使用する変数の型と初期化関数と結果表示関数
+struct INPUT_DATA
+{
+	float arr[4096];
+};
+struct OUTPUT_DATA
+{
+	float arr[4096];
+};
+void var_init(gpgpu::var<INPUT_DATA> &input, gpgpu::var<OUTPUT_DATA> &output)
+{
+	for (int i = 0; i < 2048; i++)
+	{
+		input.data.arr[i] = (float)i;
+		output.data.arr[i] = 0.0f;
+	}
+}
+void print(gpgpu::var<INPUT_DATA> &input, gpgpu::var<OUTPUT_DATA> &output)
+{
+	for (int i = 0; i < 1; i++)
+	{
+		std::cout << "in:" << std::fixed << input.data.arr[i] << ", out:" << std::fixed << output.data.arr[i] << "\n";
 	}
 }
 
@@ -36,41 +67,40 @@ public:
 		gpgpu::exitGL();
 	}
 	void compute(unsigned int num_loop, unsigned int num_sled) {
-		struct INPUT_DATA
-		{
-			int num;
-		};
-		struct OUTPUT_DATA
-		{
-			int sum;
-		};
 		gpgpu::var<INPUT_DATA> input;
 		gpgpu::var<OUTPUT_DATA> output;
-		{ // cpu
-			input.data.num = 1;
-			output.data.sum = 0;
+
+		// cpu
+		var_init(input, output);
+		{
 			QueryPerformanceCounter(&start);
 			cpu_prosess(num_loop, input, output);
 			QueryPerformanceCounter(&end);
 			cpu = (double)(end.QuadPart - start.QuadPart) / freq.QuadPart;
 		}
-		std::cout << output.data.sum << std::endl;
-		std::cout << "cpu:" << std::fixed << cpu << "sec." << std::endl;
-		{ // gpu
-			gpgpu::func func(DIR + FILE, num_loop, num_sled);
-			if (func.checkError())
-			{
-				std::cout << "エラー\n" << func.getError() << std::endl;
-				std::getchar();
-				return;
-			}
-			input.data.num = 1;
-			output.data.sum = 0;
-			{
-				input.set();
-				output.set();
-				func.Compute(input, output);
-			}
+		// print(input, output);
+		// std::cout << "cpu:" << std::fixed << cpu << "sec." << std::endl;
+		std::cout << 
+			"[cpu]\n" <<
+			"  out:" << std::fixed << output.data.arr[0] << "\n" <<
+			"  time:" << std::fixed << cpu << "sec." <<
+			"\n";
+
+		// gpu
+		var_init(input, output);
+		gpgpu::func func(DIR + FILE, num_loop, num_sled);
+		if (func.checkError())
+		{
+			std::cout << "エラー\n" << func.getError() << std::endl;
+			std::getchar();
+			return;
+		}
+		{
+			input.set();
+			output.set();
+			func.Compute(input, output);
+		}
+		{
 			QueryPerformanceCounter(&start);
 			input.set();
 			output.set();
@@ -85,8 +115,15 @@ public:
 			QueryPerformanceCounter(&end);
 			gpu = (double)(end.QuadPart - start.QuadPart) / freq.QuadPart;
 		}
-		std::cout << output.data.sum << std::endl;
+		//print(input, output);
 		//std::cout << func.getCode() << std::endl;
-		std::cout << "gpu:" << std::fixed << gpu << "sec." << std::endl;
+		//std::cout << "gpu:" << std::fixed << gpu << "sec." << std::endl;
+		std::cout <<
+			"[gpu]\n" <<
+			"  out:" << std::fixed << output.data.arr[0] << "\n" <<
+			"  time:" << std::fixed << gpu << "sec." <<
+			"\n";
+
+		std::cout << std::endl;
 	}
 };

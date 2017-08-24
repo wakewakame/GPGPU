@@ -132,9 +132,22 @@ namespace gpgpu
 			// SSBOバインド
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
 			// 構造体データ代入用のメモリ確保
-			GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
+			GLvoid* p = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 			// 代入
 			std::memcpy(p, &data, size);
+			// 代入した値をGPUに転送&生成したメモリの開放
+			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+			// SSBOアンバインド
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+		}
+		void set(TYPE *set_data)
+		{
+			// SSBOバインド
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
+			// 構造体データ代入用のメモリ確保
+			GLvoid* p = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+			// 代入
+			std::memcpy(p, &set_data, size);
 			// 代入した値をGPUに転送&生成したメモリの開放
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 			// SSBOアンバインド
@@ -147,7 +160,7 @@ namespace gpgpu
 			// SSBO_OUTバインド
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
 			// 構造体データ代入用のメモリ確保&値の取得
-			GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+			GLvoid* p = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, size, GL_MAP_READ_BIT);
 			// 代入
 			std::memcpy(&data, p, size);
 			// 生成したメモリの開放
