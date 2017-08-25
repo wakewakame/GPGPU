@@ -9,7 +9,7 @@ void main()
 	unsigned int num_loop = 2048;
 	while (true)
 	{
-		test.compute(num_loop, num_loop);
+		test.compute(num_loop, num_loop*num_loop);
 		if (std::getchar() == 'e') break;
 	}
 	return;
