@@ -1,0 +1,63 @@
+struct input_data{
+	float arr[loop.x];
+};
+
+struct output_data{
+	float arr[loop.x];
+};
+
+struct param_data{
+	uint times;
+};
+
+float get(uint i){
+	if(i >= loop.x) return 0;
+	if(param_data.times == 0) return sin(float(i))*input_data.arr[i];
+	return output_data.arr[i];
+}
+
+float sum;
+
+main(){
+	if (index.x%(int(pow(float(skip),float(param_data.times+1)))) == 0){
+		sum = 0.0;
+		for(int i = 0; i < skip; i++){
+			sum += get(index.x+(i*int(pow(float(skip),float(param_data.times)))));
+		}
+		output_data.arr[index.x] = sum;
+	}
+}
+---------------------------------------------------------------------------------------------------------------------
+#version 430
+#define skip 8
+layout(std430,binding=1) buffer SSBO1{
+	float arr[ivec3(2048, 1, 1).x];
+}input_data;
+
+layout(std430,binding=2) buffer SSBO2{
+	float arr[ivec3(2048, 1, 1).x];
+}output_data;
+
+layout(std430,binding=3) buffer SSBO3{
+	uint times;
+}param_data;
+
+float get(uint i){
+	if(i >= ivec3(2048, 1, 1).x) return 0;
+	if(param_data.times == 0) return sin(float(i))*input_data.arr[i];
+	return output_data.arr[i];
+}
+
+float sum;
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+void main(){
+	if(gl_GlobalInvocationID.x >= 2048 || gl_GlobalInvocationID.y >= 1 || gl_GlobalInvocationID.z >= 1) return;
+	if (gl_GlobalInvocationID.x % (int(pow(float(skip),float(param_data.times+1)))) == 0){
+		sum = 0.0;
+		for(int i = 0;i < skip;i++){
+			sum += get(gl_GlobalInvocationID.x+(i*int(pow(float(skip),float(param_data.times)))));
+		}
+		output_data.arr[gl_GlobalInvocationID.x] = sum;
+	}
+}

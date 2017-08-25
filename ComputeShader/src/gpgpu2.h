@@ -184,15 +184,17 @@ namespace gpgpu
 	class func
 	{
 	private:
+
 		Code code; // シェーダーのソースコード
 		GLuint FID; // GPU側の関数ID
 		std::vector<GLuint> SSBO_back; // 前回のGPU側の変数ID
 		std::vector<GLuint> SSBO; // GPU側の変数ID
-		unsigned int loop; // ループ回数
-		unsigned int sled; // 生成するスレッド数
+		uvec3 loop; // ループ回数
+		uvec3 sled; // 生成するスレッド数
 		std::string CSCode; // GLSLコード
 		bool error; // エラーが発生すれば1が代入される
 		std::string error_desc; // エラー文代入用変数
+		bool compile; // 再コンパイルフラグ
 
 		/*
 		コンピュートシェーダー読み込み関数
@@ -247,6 +249,9 @@ namespace gpgpu
 			// 生成したプログラムのIDを代入
 			FID = CSPID;
 
+			// コンパイルフラグの回収
+			compile = 0;
+
 			// 処理の終了
 			return 1;
 		}
@@ -268,7 +273,7 @@ namespace gpgpu
 			{
 				SSBO = SSBO_back;
 				code.set_param("430", loop, sled, (std::vector<unsigned int>)SSBO);
-				loadShader();
+				compile = 1;
 			}
 			SSBO_back.clear();
 		}
@@ -281,20 +286,34 @@ namespace gpgpu
 		}
 
 	public:
-		func(std::string Filename, unsigned int set_loop, unsigned int set_sled)
+		func(std::string Filename)
 		{
 			// 変数の値の初期化
 			error = 0;
 			error_desc = "";
-			loop = set_loop;
-			if (set_sled > set_loop) sled = set_loop;
-			else sled = set_sled;
 			FID = GL_FALSE;
 			if (!code.open(Filename, 1))
 			{
 				error = 1;
 				error_desc = "File is not found"; // エラー文代入
 			}
+			compile = 1;
+		}
+		func(std::string Filename, unsigned int set_loop, unsigned int set_sled)
+		{
+			// 変数の値の初期化
+			error = 0;
+			error_desc = "";
+			loop.x = set_loop;
+			if (set_sled > set_loop) sled.x = set_loop;
+			else sled.x = set_sled;
+			FID = GL_FALSE;
+			if (!code.open(Filename, 1))
+			{
+				error = 1;
+				error_desc = "File is not found"; // エラー文代入
+			}
+			compile = 1;
 		}
 
 		~func()
@@ -313,13 +332,55 @@ namespace gpgpu
 			// 引数の取得
 			getArg(arg...);
 
+			// 再コンパイルの必要があれば、再コンパイル
+			if (compile) loadShader();
+
 			// シェーダーの指定
 			glUseProgram(FID);
 
 			// 計算
-			glDispatchCompute(std::ceil(sled), 1, 1); // 使用するスレッド数(x, y, z)
+			glDispatchCompute(sled.x, sled.y, sled.z); // 使用するスレッド数(x, y, z)
 
 			return 1;
+		}
+
+		/*
+		ループ回数と使用するスレッド数指定
+			引数1,3,5:x,y,zでループさせる回数(2項目以降は省略可)
+			引数2,4,6:x,y,zで使用するスレッド数(2項目以降は省略可)
+		*/
+		void set_loop(
+			unsigned int set_loop_x,
+			unsigned int set_sled_x,
+			unsigned int set_loop_y = 1,
+			unsigned int set_sled_y = 1,
+			unsigned int set_loop_z = 1,
+			unsigned int set_sled_z = 1
+		)
+		{
+			// 代入
+			loop.x = set_loop_x;
+			if (set_sled_x > set_loop_x) sled.x = set_loop_x;
+			else sled.x = set_sled_x;
+			loop.y = set_loop_y;
+			if (set_sled_y > set_loop_y) sled.y = set_loop_y;
+			else sled.y = set_sled_y;
+			loop.z = set_loop_z;
+			if (set_sled_z > set_loop_z) sled.z = set_loop_z;
+			else sled.z = set_sled_z;
+			// 再コンパイルフラグ
+			compile = 1;
+		}
+
+		/*
+		コードにdefine追加関数
+			引数1:定数名
+			引数2:定数値
+		*/
+		void set_def(std::string def_name, std::string def_val)
+		{
+			code.set_define(def_name, def_val);
+			compile = 1;
 		}
 
 		// コード確認

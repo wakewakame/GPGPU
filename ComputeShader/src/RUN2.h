@@ -95,11 +95,12 @@ public:
 			std::getchar();
 			return;
 		}
+		unsigned int skip = 8;
+		func.set_def("skip", std::to_string(skip));
 		{
 			QueryPerformanceCounter(&start);
 			input.set();
 			output.set();
-			unsigned int skip = 8;
 			for(int i = 0; i < ceil(logf(num_loop) / logf(skip)); i++)
 			{
 				param.set();
@@ -130,6 +131,7 @@ public:
 			"  " << "cpu:" << std::fixed << cpu << "sec." << "," << "gpu:" << std::fixed << gpu << "sec." <<
 			"\n";
 
+		std::cout << func.getCode() << std::endl;
 		std::cout << std::endl;
 	}
 };

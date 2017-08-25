@@ -6,6 +6,18 @@
 #include <fstream>
 #include <cmath>
 
+struct uvec3 {
+	unsigned int x;
+	unsigned int y;
+	unsigned int z;
+	uvec3()
+	{
+		x = 1;
+		y = 1;
+		z = 1;
+	}
+};
+
 class Code
 {
 private:
@@ -26,10 +38,16 @@ private:
 			MAIN, // MAIN
 			INDEX // INDEX
 		};
+		struct DEF
+		{
+			std::string name;
+			std::string val;
+		};
 
 		NodeType type;
 		bool colon; // 文末にコロンが必要かどうか
 		bool semicolon; // 文末にセミコロンが必要かどうか
+		std::string start;
 		std::string end;
 		std::string version;
 
@@ -37,9 +55,10 @@ private:
 		Chart *parent;
 		std::vector<Chart*> childs;
 		int index;
-		unsigned int loop;
-		unsigned int sled;
+		uvec3 loop;
+		uvec3 sled;
 		std::vector<unsigned int> bind;
+		std::vector<DEF> def;
 
 		Chart *Add(NodeType setType)
 		{
@@ -53,6 +72,7 @@ private:
 		{
 			type = setType;
 			semicolon = 0;
+			start = "";
 			end = "";
 			version = "430";
 			colon = 0;
@@ -60,9 +80,8 @@ private:
 			parent = nullptr;
 			childs.clear();
 			index = 0;
-			loop = 0;
-			sled = 0;
 			bind.clear();
+			def.clear();
 		}
 
 		~Chart()
@@ -142,7 +161,12 @@ private:
 				if (Scope->text.substr(0, 4) == "main")
 				{
 					Scope->type = Chart::NodeType::MAIN;
-					Scope->text = "layout(local_size_x = " + std::to_string((int)ceil(((float)loop) / ((float)sled))) + ") in;\nvoid main";
+					Scope->text = "layout(local_size_x = " + std::to_string((int)ceil(((float)loop.x) / ((float)sled.x))) + ", " + "local_size_y = " + std::to_string((int)ceil(((float)loop.y) / ((float)sled.y))) + ", " + "local_size_z = " + std::to_string((int)ceil(((float)loop.z) / ((float)sled.z))) + ") in;\nvoid main";
+					if (Scope->index + 2 < Scope->parent->childs.size()) {
+						if (Scope->parent->childs[Scope->index + 2]->type == Chart::NodeType::BRACES) {
+							Scope->parent->childs[Scope->index + 2]->start += "\nif(gl_GlobalInvocationID.x >= " + std::to_string(this->loop.x) + " || gl_GlobalInvocationID.y >= " + std::to_string(this->loop.y) + " || gl_GlobalInvocationID.z >= " + std::to_string(this->loop.z) + ") return;\n";
+						}
+					}
 				}
 				if (Scope->text.substr(0, 6) == "struct")
 				{
@@ -167,7 +191,14 @@ private:
 					}
 
 					Scope->type = Chart::NodeType::SSBO;
-					Scope->text = "layout(std430,binding=" + std::to_string(bind[bind_index]) + ") buffer SSBO" + std::to_string(bind[bind_index]);
+					if (bind_index >= bind.size())
+					{
+						Scope->text = "layout(std430,binding=0) buffer SSBO0";
+					}
+					else
+					{
+						Scope->text = "layout(std430,binding=" + std::to_string(bind[bind_index]) + ") buffer SSBO" + std::to_string(bind[bind_index]);
+					}
 					bind_index += 1;
 				}
 				char_index = -1;
@@ -193,6 +224,7 @@ private:
 							case '<':
 							case '>':
 							case '!':
+							case '.':
 							case 10:
 							case 13:
 								str += Scope->text.substr(0, char_index);
@@ -202,7 +234,7 @@ private:
 								break;
 							}
 						}
-						str += "gl_GlobalInvocationID.x";
+						str += "gl_GlobalInvocationID";
 						if (char_index + std::string("index").size() - 1 != Scope->text.size() - 1)
 						{
 							switch (Scope->text[char_index + std::string("index").size()])
@@ -218,6 +250,7 @@ private:
 							case '<':
 							case '>':
 							case '!':
+							case '.':
 							case 10:
 							case 13:
 								str += Scope->text.substr(char_index + std::string("index").size(), Scope->text.size() - (char_index + std::string("index").size()));
@@ -261,6 +294,7 @@ private:
 							case '<':
 							case '>':
 							case '!':
+							case '.':
 							case 10:
 							case 13:
 								str += Scope->text.substr(0, char_index);
@@ -270,7 +304,7 @@ private:
 								break;
 							}
 						}
-						str += std::to_string(loop);
+						str += "ivec3(" + std::to_string(loop.x) + ", " + std::to_string(loop.y) + ", " + std::to_string(loop.z) + ")";
 						if (char_index + std::string("loop").size() - 1 != Scope->text.size() - 1)
 						{
 							switch (Scope->text[char_index + std::string("loop").size()])
@@ -286,6 +320,7 @@ private:
 							case '<':
 							case '>':
 							case '!':
+							case '.':
 							case 10:
 							case 13:
 								str += Scope->text.substr(char_index + std::string("loop").size(), Scope->text.size() - (char_index + std::string("loop").size()));
@@ -330,7 +365,7 @@ private:
 				}
 				break;
 			case Chart::NodeType::BRACES:
-				res = res + "{";
+				res = res + "{" + chart->start;
 				for (int i = 0; i < chart->childs.size(); i++) {
 					if (i == 0) res = res + "\n";
 					res = res + Write(chart->childs[i]);
@@ -895,8 +930,15 @@ private:
 
 		std::string getGLSL()
 		{
+			std::string res = "";
+			res += "#version " + version + "\n";
+			for (int i = 0; i < def.size(); i++)
+			{
+				res += "#define " + def[i].name + " " + def[i].val + "\n";
+			}
 			Load();
-			return Write(this);
+			res += Write(this);
+			return res;
 		}
 
 		void bind_point(std::vector<unsigned int> set_bind)
@@ -913,7 +955,7 @@ public:
 		return read.Open(text, FileMode);
 	}
 
-	void set_param(std::string version, unsigned int loop, unsigned int sled, std::vector<unsigned int> set_bind)
+	void set_param(std::string version, uvec3 loop, uvec3 sled, std::vector<unsigned int> set_bind)
 	{
 		read.version = version;
 		read.loop = loop;
@@ -921,8 +963,22 @@ public:
 		read.bind_point(set_bind);
 	}
 
+	void set_define(std::string def_name, std::string def_val)
+	{
+		for (int i = 0; i < read.def.size(); i++)
+		{
+			if (def_name == read.def[i].name)
+			{
+				read.def[i].val = def_val;
+				return;
+			}
+		}
+		read.def.push_back({ def_name, def_val });
+		return;
+	}
+
 	std::string get_glsl()
 	{
-		return "#version " + read.version + "\n" + read.getGLSL();
+		return read.getGLSL();
 	}
 };

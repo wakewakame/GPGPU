@@ -1,11 +1,11 @@
 struct input_data
 {
-	float arr[loop];
+	float arr[loop.x];
 };
 
 struct output_data
 {
-	float arr[loop];
+	float arr[loop.x];
 };
 
 struct param_data
@@ -15,23 +15,22 @@ struct param_data
 
 float get(uint i)
 {
-	if(i >= loop) return 0;
+	if(i >= loop.x) return 0;
 	if(param_data.times == 0) return sin(float(i))*input_data.arr[i];
 	return output_data.arr[i];
 }
 
-#define skip 8
 float sum;
 
 main()
 {
-	if (index%(int(pow(float(skip),float(param_data.times+1)))) == 0)
+	if (index.x%(int(pow(float(skip),float(param_data.times+1)))) == 0)
 	{
 		sum = 0.0;
 		for(int i = 0; i < skip; i++)
 		{
-			sum += get(index+(i*int(pow(float(skip),float(param_data.times)))));
+			sum += get(index.x+(i*int(pow(float(skip),float(param_data.times)))));
 		}
-		output_data.arr[index] = sum;
+		output_data.arr[index.x] = sum;
 	}
 }
