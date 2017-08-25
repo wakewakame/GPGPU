@@ -1,0 +1,9 @@
+struct data
+{
+	float arr[loop.x][loop.y];
+};
+
+main()
+{
+	data.arr[index.x][index.y]=index.y*loop.y + index.x;
+}

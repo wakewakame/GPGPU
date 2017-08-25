@@ -88,7 +88,7 @@ public:
 
 		// gpu
 		var_init(input, output, param);
-		gpgpu::func func(DIR + FILE, num_loop, num_sled);
+		gpgpu::func func(DIR + FILE);
 		if (func.checkError())
 		{
 			std::cout << "ƒGƒ‰[\n" << func.getError() << std::endl;
@@ -97,6 +97,7 @@ public:
 		}
 		unsigned int skip = 8;
 		func.set_def("skip", std::to_string(skip));
+		func.set_loop(num_loop, num_sled, num_loop, num_sled);
 		{
 			QueryPerformanceCounter(&start);
 			input.set();
@@ -131,7 +132,7 @@ public:
 			"  " << "cpu:" << std::fixed << cpu << "sec." << "," << "gpu:" << std::fixed << gpu << "sec." <<
 			"\n";
 
-		std::cout << func.getCode() << std::endl;
+		//std::cout << func.getCode() << std::endl;
 		std::cout << std::endl;
 	}
 };

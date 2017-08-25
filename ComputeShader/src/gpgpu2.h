@@ -358,6 +358,7 @@ namespace gpgpu
 			unsigned int set_sled_z = 1
 		)
 		{
+			if (set_loop_x == loop.x && set_sled_x == sled.x && set_loop_y == loop.y && set_sled_y == sled.y && set_loop_z == loop.z && set_sled_z == sled.z) return;
 			// ‘ã“ü
 			loop.x = set_loop_x;
 			if (set_sled_x > set_loop_x) sled.x = set_loop_x;
