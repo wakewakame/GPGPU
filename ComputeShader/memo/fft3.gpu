@@ -1,0 +1,14 @@
+struct buffer
+{
+	float arr[loop.x][loop.y];
+};
+
+struct output
+{
+	float arr[loop.x];
+};
+
+main()
+{
+	output.arr[index.x] = buffer.arr[index.x][index.y];
+}

@@ -1,0 +1,18 @@
+struct buffer
+{
+	float arr[loop.x][loop.y];
+};
+
+struct param
+{
+	uint skip;
+	uint step;
+	uint SamplingHz;
+	float StartHz;
+	float EndHz;
+};
+
+main()
+{
+	buffer.arr[index.x][index.y]=buffer.arr[index.x][index.y];
+}
