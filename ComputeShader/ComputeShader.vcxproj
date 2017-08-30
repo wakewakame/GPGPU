@@ -113,7 +113,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="src\p2.gpu">
+    <None Include="src\program.gpu">
       <FileType>Text</FileType>
       <DeploymentContent>true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>

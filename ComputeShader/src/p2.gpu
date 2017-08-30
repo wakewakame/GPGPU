@@ -1,9 +1,0 @@
-SSBO data
-{
-	float arr[loop.x][loop.y];
-};
-
-main()
-{
-	data.arr[index.x][index.y]=float((1+index.x)*(1+index.y));
-}

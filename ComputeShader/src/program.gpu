@@ -1,0 +1,15 @@
+// CPUと共有する構造体
+// SSBOはstructのようなもの
+// dataは構造体名ではなく変数名
+SSBO data
+{
+	float arr[loop.x][loop.y];
+};
+
+// main関数
+// C++と同じく、この関数から実行される
+// 新しく関数を定義することもできる
+main()
+{
+	data.arr[index.x][index.y]=float((1+index.x)*(1+index.y));
+}
