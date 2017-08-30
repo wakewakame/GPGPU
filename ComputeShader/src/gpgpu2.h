@@ -12,6 +12,9 @@
 // GPGPUに必要な関数やクラスをまとめたもの
 namespace gpgpu
 {
+	// エラー文代入
+	std::string error;
+
 	/*
 	初期化関数
 	GLFW,GLEWが初期化されていなければ、この関数で初期化する
@@ -19,20 +22,30 @@ namespace gpgpu
 	*/
 	bool initGL()
 	{
+		error = "";
 		glewExperimental = GL_TRUE; // よくわかんないけど必要らしい
 		if (glfwInit() == GL_FALSE) // GLFW初期化&エラーチェック
 		{
+			error = "failed : GLFW init";
 			return 0;
 		}
 		// OpenGL Version 4.3を指定
 		glfwWindowHint(GLFW_SAMPLES, 4);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // MacOS用：必ずしも必要ではありません。
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // 古いOpenGLは使いません。
 		glfwWindowHint(GLFW_VISIBLE, 0); // 描画処理はしないので、ウィンドウは生成しないようにする
-		GLFWwindow* win = glfwCreateWindow(640, 480, "", NULL, NULL); // ウィンドウ生成
+		GLFWwindow* win = glfwCreateWindow(1, 1, "", NULL, NULL); // ウィンドウ生成
+		if (win == nullptr) // GLEW初期化&エラーチェック
+		{
+			error = "failed : create GLFW context";
+			return 0;
+		}
 		glfwMakeContextCurrent(win); // 生成したウィンドウをOpenGLの処理対象にする
 		if (glewInit() != GLEW_OK) // GLEW初期化&エラーチェック
 		{
+			error = "failed : GLEW context";
 			return 0;
 		}
 		return 1;
@@ -95,7 +108,7 @@ namespace gpgpu
 
 	public:
 		// 指定された型の構造体生成
-		TYPE data;
+		TYPE *data;
 
 		/*
 		コンストラクタ
@@ -111,10 +124,12 @@ namespace gpgpu
 			if (set_size != 0)
 			{
 				size = set_size;
+				data = new TYPE;
 			}
 			else
 			{
 				size = sizeof(TYPE);
+				data = new TYPE;
 			}
 			// SSBO生成
 			createSSBO();
@@ -124,6 +139,7 @@ namespace gpgpu
 		~var()
 		{
 			deleteSSBO();
+			delete data;
 		}
 
 		// GPU側に変数の内容を転送
@@ -134,7 +150,7 @@ namespace gpgpu
 			// 構造体データ代入用のメモリ確保
 			GLvoid* p = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 			// 代入
-			std::memcpy(p, &data, size);
+			std::memcpy(p, data, size);
 			// 代入した値をGPUに転送&生成したメモリの開放
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 			// SSBOアンバインド
@@ -162,7 +178,7 @@ namespace gpgpu
 			// 構造体データ代入用のメモリ確保&値の取得
 			GLvoid* p = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, size, GL_MAP_READ_BIT);
 			// 代入
-			std::memcpy(&data, p, size);
+			std::memcpy(data, p, size);
 			// 生成したメモリの開放
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 			// SSBOアンバインド

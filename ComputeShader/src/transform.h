@@ -168,13 +168,13 @@ private:
 						}
 					}
 				}
-				if (Scope->text.substr(0, 6) == "struct")
+				if (Scope->text.substr(0, 4) == "SSBO")
 				{
 					if (Scope->index != Scope->parent->childs.size() - 1)
 					{
 						if (Scope->parent->childs[Scope->index + 1]->type == Chart::NodeType::BRACES)
 						{
-							for (int i = std::string("struct").size(); i < Scope->text.size(); i++)
+							for (int i = std::string("SSBO").size(); i < Scope->text.size(); i++)
 							{
 								switch (Scope->text[i])
 								{
