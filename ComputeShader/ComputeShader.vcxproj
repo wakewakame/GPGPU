@@ -113,13 +113,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="src\p2.gpu">
+      <FileType>Text</FileType>
+      <DeploymentContent>true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\gpgpu2.h" />
-    <ClInclude Include="src\transform.h" />
+    <ClInclude Include="lib\gpgpu.h" />
+    <ClInclude Include="lib\transform.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\debug.cpp" />
+    <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
