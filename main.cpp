@@ -1,17 +1,14 @@
-#include "../lib/gpgpu.h"
+#include "ComputeShader/gpgpu.h"
 #include <iostream>
 #include <cmath>
 #include <windows.h>
 
-std::string DIR;
-std::string FILENAME;
-
 // GPU側でのループ回数
-#define num_loop_x 10
-#define num_loop_y 10
+#define num_loop_x 9
+#define num_loop_y 9
 // GPU側に何個スレッドを用意するか(多いほうが早い)
-#define num_sled_x 10
-#define num_sled_y 10
+#define num_sled_x 9
+#define num_sled_y 9
 
 // GPU側と共有する構造体
 struct DATA
@@ -21,12 +18,6 @@ struct DATA
 
 void main()
 {
-	// カレントディレクトリ取得
-	char DIR_[255];
-	GetCurrentDirectory(255, DIR_);
-	DIR = std::string(DIR_) + "\\src\\";
-	FILENAME = "program.gpu";
-
 	// gpgpu初期化
 	gpgpu::initGL();
 	if (gpgpu::error != "") // エラー確認
@@ -45,7 +36,17 @@ void main()
 	}
 
 	// gpu側に関数を追加
-	gpgpu::func func(DIR + FILENAME);
+	gpgpu::func func(R"(
+SSBO data
+{
+	float arr[loop.x][loop.y];
+};
+
+main()
+{
+	data.arr[index.x][index.y] = float((1 + index.x) * (1 + index.y));
+}
+)", false);
 
 	// 何回ループするかを指定
 	func.set_loop(num_loop_x, num_sled_x, num_loop_y, num_sled_y);
@@ -67,8 +68,8 @@ void main()
 	data.get();
 
 	// 計算結果表示
-	for (int j = 0; j < 10; j++) {
-		for (int i = 0; i < 10; i++) {
+	for (int j = 0; j < num_loop_y; j++) {
+		for (int i = 0; i < num_loop_x; i++) {
 			std::cout << "[";
 			if (data.data->arr[i][j] == 0) std::cout << "  ";
 			else for (int num_space = 0; num_space < 2 - (int)floor(log10((float)data.data->arr[i][j])); num_space++) {

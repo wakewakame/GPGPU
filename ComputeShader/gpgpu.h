@@ -302,20 +302,20 @@ namespace gpgpu
 		}
 
 	public:
-		func(std::string Filename)
+		func(std::string text, bool mode)
 		{
 			// 変数の値の初期化
 			error = 0;
 			error_desc = "";
 			FID = GL_FALSE;
-			if (!code.open(Filename, 1))
+			if (!code.open(text, mode))
 			{
 				error = 1;
 				error_desc = "File is not found"; // エラー文代入
 			}
 			compile = 1;
 		}
-		func(std::string Filename, unsigned int set_loop, unsigned int set_sled)
+		func(std::string text, bool mode, unsigned int set_loop, unsigned int set_sled)
 		{
 			// 変数の値の初期化
 			error = 0;
@@ -324,7 +324,7 @@ namespace gpgpu
 			if (set_sled > set_loop) sled.x = set_loop;
 			else sled.x = set_sled;
 			FID = GL_FALSE;
-			if (!code.open(Filename, 1))
+			if (!code.open(text, mode))
 			{
 				error = 1;
 				error_desc = "File is not found"; // エラー文代入
